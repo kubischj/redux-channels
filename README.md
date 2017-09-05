@@ -6,8 +6,9 @@ The name of the channel would be the type passed along to the store on a dispatc
 
 ```javascript
 const { createStore } = Redux;
+const initialState = { data: "🐈" };
 const manager = channelManager();
-const store = createStore(manager.reducer);
+const store = createStore(manager.reducer(initialState));
 const myChannel = manager.createChannel("myChannel", store.dispatch);
 ```
 
