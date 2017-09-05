@@ -24,7 +24,7 @@ let unsub = myChannel.subscribe(state => {
 });
 ```
 
-To do:
+### To do:
 * Handling incorrect parameters
 * Test current implementation
 * Write tests
@@ -32,3 +32,6 @@ To do:
 * Document code, and also update the readme
 * Probably refactor
 * Release to NPM
+
+## Licence
+MIT
