@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/kubischj/redux-channels#readme",
   "devDependencies": {
+    "expect": "^21.0.0",
     "redux": "^3.7.2"
   }
 }
