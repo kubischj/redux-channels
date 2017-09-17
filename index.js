@@ -1,24 +1,24 @@
 /**
- *
- * @returns {{attach: attach, createChannel: createChannel, reducer}}
+ * Creates a channel manager.
+ * @returns {{attach: attach, createChannel: createChannel, reducer, channels}}
  */
 export default function channelManager() {
 	let channels = {};
 
 	/**
-	 *
+	 * Applies some of a functions' arguments to it without calling it, and returns the resulting function.
 	 * @param fn
 	 * @param args
 	 * @returns {function(...[*])}
 	 */
-	function curry(fn, ...args) {
+	function partialApply(fn = () => {}, ...args) {
 		return (...moreArgs) => {
 			return fn(...args, ...moreArgs);
 		}
 	}
 
 	/**
-	 *
+	 * Creates a channel.
 	 * @param dispatcher
 	 * @param name
 	 * @returns {{subscribe: subscribe, dispatch: (function(...[*])), emit: (function(...[*]))}}
@@ -27,7 +27,7 @@ export default function channelManager() {
 		let listeners = [];
 
 		/**
-		 *
+		 * Removes a reducer by index from the channel.
 		 * @param index
 		 * @returns {Array.<*>}
 		 */
@@ -36,27 +36,33 @@ export default function channelManager() {
 		}
 
 		/**
-		 *
+		 * Adds a reducer function to the channel.
 		 * @param listener
-		 * @returns {function(...[*])}
+		 * @returns {function(...[*])} Returns a function that can remove the added reducer from the channel.
 		 */
-		function subscribe(listener) {
+		function subscribe(listener = () => {}) {
 			listeners.push(listener);
-			return curry(unsubscribe, listeners.length - 1);
+			return partialApply(unsubscribe, listeners.length - 1);
 		}
 
 		/**
-		 *
+		 * Uses the dispatcher supplied when creating the channel to dispatch an action on the store, and fills the
+		 * action type in with the channel name.
+		 * @param name
 		 * @param dispatcher
 		 * @param data
 		 * @returns {*}
 		 */
-		function dispatch(dispatcher, data = {}) {
+		function dispatch(name, dispatcher = () => {}, data = {}) {
+			if (!name.toUpperCase) {
+				throw new Error(`You need to supply a string 'name' to the channel before calling dispatch on it.
+				This should be the name of the variable holding the channel.`);
+			}
 			return dispatcher(Object.assign({}, data, { type: name }));
 		}
 
 		/**
-		 *
+		 * Sends the data to all the listeners.
 		 * @param listeners
 		 * @param data
 		 */
@@ -68,22 +74,27 @@ export default function channelManager() {
 			});
 		}
 
-		return { subscribe, dispatch: curry(dispatch, dispatcher), emit: curry(emit, listeners) };
+		return { subscribe, dispatch: partialApply(dispatch, name, dispatcher), emit: partialApply(emit, listeners) };
 	}
 
 	/**
-	 *
+	 * Creates a new channel, that uses the supplied dispatcher, and will be accessible by the supplied name, and adds
+	 * it to the managers channels.
 	 * @param dispatcher
 	 * @param name
 	 * @returns {{subscribe: (subscribe|((listener: () => void) => Unsubscribe)|*), dispatch}}
 	 */
 	function createChannel(dispatcher, name) {
+		if (!dispatcher.call || !name.toUpperCase) {
+			throw new Error(`The createChannel function should be called with a dispatcher function and a string name.`);
+		}
 		if (!channels[name]) channels[name] = channel(dispatcher, name);
 		return { subscribe: channels[name].subscribe, dispatch: channels[name].dispatch };
 	}
 
 	/**
-	 *
+	 * The reducer function that should be supplied to the store. It will route all the actions to their respective
+	 * channels, so the subscribers may produce the new state.
 	 * @param channels
 	 * @param initialState
 	 * @returns {function(*=, *)}
@@ -97,18 +108,22 @@ export default function channelManager() {
 	}
 
 	/**
-	 *
+	 * Creates a store by calling the supplied createStore function, and then attaches the manager to it.
 	 * @param createStore
 	 * @param initialState
-	 * @returns {{createChannel: (function(...[*])), store: *}}
+	 * @returns {{channels, createChannel: (function(...[*])), store: *}}
 	 */
 	function attach(createStore, initialState) {
+		if (!createStore.call) {
+			throw new Error(`Attach cannot create the store without a createStore function.`);
+		}
 		const store = createStore(reducer(channels, initialState));
 		return {
-			createChannel: curry(createChannel, store.dispatch),
+			channels,
+			createChannel: partialApply(createChannel, store.dispatch),
 			store
 		};
 	}
 
-	return { attach, createChannel, reducer: curry(reducer, channels) };
+	return { attach, createChannel, reducer: partialApply(reducer, channels), channels };
 }

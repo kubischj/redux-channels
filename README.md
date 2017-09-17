@@ -16,6 +16,8 @@ const manager = channelManager().attach(createStore, initialState);
 // manager.createChannel: The createChannel function, that only needs a channel name.
 
 const myChannel = manager.createChannel("myChannel");
+// Or
+manager.channels.myChannel = manager.channel("myChannel");
 ```
 
 The manager will contain the store and the createChannel function, and you do not have to supply the stores' dispatch function as an argument to createChannel when using it, only a name.
@@ -28,6 +30,8 @@ const initialState = { data: "🐈" };
 const manager = channelManager();
 const store = createStore(manager.reducer(initialState));
 const myChannel = manager.createChannel(store.dispatch, "myChannel");
+//Or
+manager.channels.myChannel = manager.channel(store.dispatch, "myChannel");
 ```
 
 ### Using the channels
@@ -47,12 +51,8 @@ let unsub = myChannel.subscribe(state => {
 Action types do not need to be checked inside the subscribed function, as it will only be called, when a dispatch is called on its' own channel.
 
 ### To do:
-* Handling incorrect parameters
-* Test current implementation
 * Write tests
 * Finish the example
-* Document code, and also update the readme
-* Probably refactor
 * Release to NPM
 
 ## Licence
